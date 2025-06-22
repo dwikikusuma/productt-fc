@@ -95,3 +95,15 @@ func (uc *ProductUseCase) DeleteProductCat(ctx context.Context, productCategoryI
 
 	return nil
 }
+
+func (uc *ProductUseCase) SearchProduct(ctx context.Context, searchParam *models.SearchProductParameter) ([]models.Product, int64, error) {
+	products, total, err := uc.ProductService.GetProductList(ctx, searchParam)
+	if err != nil {
+		log.Logger.WithFields(logrus.Fields{
+			"searchParam": searchParam,
+		}).Errorf("uc.ProductService.GetProductList got error %v", err)
+		return []models.Product{}, 0, err
+	}
+
+	return products, total, nil
+}

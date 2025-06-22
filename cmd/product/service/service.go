@@ -104,3 +104,11 @@ func (s *ProductService) DeleteProductCat(ctx context.Context, productCatId int)
 	}
 	return nil
 }
+
+func (s *ProductService) GetProductList(ctx context.Context, paramRequest *models.SearchProductParameter) ([]models.Product, int64, error) {
+	products, total, err := s.ProductRepository.SearchProducts(ctx, paramRequest)
+	if err != nil {
+		return []models.Product{}, 0, err
+	}
+	return products, total, nil
+}

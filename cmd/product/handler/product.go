@@ -139,3 +139,61 @@ func (h *ProductHandler) GetProductById(c *gin.Context) {
 		"product": product,
 	})
 }
+
+func (h *ProductHandler) SearchProduct(c *gin.Context) {
+	name := c.Query("name")
+	category := c.Query("category")
+
+	minPrice, _ := strconv.ParseFloat(c.Query("min_price"), 64)
+	maxPrice, _ := strconv.ParseFloat(c.Query("max_price"), 64)
+
+	sortBy := c.Query("sort_by")
+	orderBy := c.Query("order_by")
+
+	page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
+	PageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "10"), 10, 64)
+
+	searchParam := models.SearchProductParameter{
+		Name:     name,
+		Category: category,
+		MinPrice: minPrice,
+		MaxPrice: maxPrice,
+		SortBy:   sortBy,
+		OrderBy:  orderBy,
+		Limit:    PageSize,
+		Page:     page,
+	}
+
+	products, total, err := h.ProductUseCase.SearchProduct(c.Request.Context(), &searchParam)
+	if err != nil {
+		log.Logger.WithFields(logrus.Fields{
+			"param": searchParam,
+		}).Errorf("h.ProductUseCase.SearchProduct got an error: %v", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	totalPages := (total + PageSize - 1) / PageSize
+
+	var nextPageURL *string
+	if page < totalPages {
+		nextPage := page + 1
+		nextPageURLStr := fmt.Sprintf("/products?name=%s&category=%s&min_price=%f&max_price=%f&sort_by=%s&order_by=%s&page=%d&page_size=%d",
+			name, category, minPrice, maxPrice, sortBy, orderBy, nextPage, PageSize)
+		nextPageURL = &nextPageURLStr
+	}
+
+	c.JSON(http.StatusOK, models.SearchProductResponse{
+		Products:    products,
+		Page:        int(page),
+		PageSize:    int(PageSize),
+		TotalCount:  total,
+		TotalPages:  int(totalPages),
+		NextPage:    nextPageURL != nil,
+		NextPageURL: nextPageURL,
+	})
+
+}
