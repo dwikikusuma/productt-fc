@@ -15,4 +15,6 @@ func SetupRoutes(router *gin.Engine, productHandler handler.ProductHandler) {
 	router.POST("v1/product", productHandler.ProductManagement)
 	router.GET("v1/product/:id", productHandler.GetProductById)
 
+	router.GET("v1/products/search", productHandler.SearchProduct)
+
 }
