@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"product_commerce/infra/log"
 	"product_commerce/models"
 	"time"
 )
@@ -61,11 +62,13 @@ func (r *ProductRepository) SetProductById(ctx context.Context, product *models.
 	cacheKey := fmt.Sprintf(cacheKeyProductInfo, product.ID)
 	productJson, err := json.Marshal(product)
 	if err != nil {
+		log.Logger.Error("failed to marshal product on ProductRepository SetProductById")
 		return err
 	}
 
 	err = r.Redis.SetEX(ctx, cacheKey, productJson, 10*time.Minute).Err()
 	if err != nil {
+		log.Logger.Error("failed to set product cache on ProductRepository SetProductById")
 		return err
 	}
 	return nil
