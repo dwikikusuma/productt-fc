@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"product_commerce/cmd/product/repository"
 	"product_commerce/infra/log"
 	"product_commerce/models"
@@ -74,23 +75,66 @@ func (s *ProductService) CreateProductCat(ctx context.Context, productCat *model
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, product *models.Product) (*models.Product, error) {
-	product, err := s.ProductRepository.UpdateProduct(ctx, product)
+	var model *models.Product
+	err := s.ProductRepository.WithTransaction(ctx, func(tx *gorm.DB) error {
+		productDetail, err := s.ProductRepository.UpdateProduct(ctx, product)
+		if err != nil {
+			return err
+		}
+		model = productDetail
+
+		err = s.ProductRepository.SetProductById(ctx, product)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	return product, nil
+
+	return model, nil
 }
 
 func (s *ProductService) UpdateProductCat(ctx context.Context, productCat *models.ProductCategory) (*models.ProductCategory, error) {
-	productCat, err := s.ProductRepository.UpdateProductCat(ctx, productCat)
+	var model *models.ProductCategory
+	err := s.ProductRepository.WithTransaction(ctx, func(tx *gorm.DB) error {
+		productCatDetail, err := s.ProductRepository.UpdateProductCat(ctx, productCat)
+		if err != nil {
+			return err
+		}
+		model = productCatDetail
+
+		err = s.ProductRepository.DeleteProductCache(ctx, productCatDetail.ID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	return productCat, nil
+	return model, nil
 }
 
 func (s *ProductService) DeleteProduct(ctx context.Context, productId int) error {
-	err := s.ProductRepository.DeleteProduct(ctx, productId)
+	err := s.ProductRepository.WithTransaction(ctx, func(tx *gorm.DB) error {
+		err := s.ProductRepository.DeleteProduct(ctx, productId)
+		if err != nil {
+			return err
+		}
+
+		err = s.ProductRepository.DeleteProductCache(ctx, productId)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return err
 	}
