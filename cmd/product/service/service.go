@@ -37,7 +37,7 @@ func (s *ProductService) GetProductById(ctx context.Context, productId int64) (*
 		return nil, err
 	}
 
-	ctxConcurrent := context.WithValue(ctx, context.Background(), ctx.Value("request_id"))
+	ctxConcurrent := context.WithValue(context.Background(), "request_id", ctx.Value("request_id"))
 	go func(ctx context.Context, product *models.Product) {
 		errConcurrent := s.ProductRepository.SetProductById(ctx, product)
 		if errConcurrent != nil {
