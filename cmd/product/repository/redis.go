@@ -87,3 +87,17 @@ func (r *ProductRepository) SetProductCatById(ctx context.Context, productCat *m
 	}
 	return nil
 }
+
+func (r *ProductRepository) DeleteProductCache(ctx context.Context, productId int) error {
+	cacheKey := fmt.Sprintf(cacheKeyProductInfo, productId)
+	return r.DeleteRedisCacheKey(ctx, cacheKey)
+}
+
+func (r *ProductRepository) DeleteProductCatCache(ctx context.Context, productCatId int) error {
+	cacheKey := fmt.Sprintf(cacheKeyProductCatInfo, productCatId)
+	return r.DeleteRedisCacheKey(ctx, cacheKey)
+}
+
+func (r *ProductRepository) DeleteRedisCacheKey(ctx context.Context, cacheKey string) error {
+	return r.Redis.Del(ctx, cacheKey).Err()
+}
